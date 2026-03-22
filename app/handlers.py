@@ -512,10 +512,9 @@ class BusinessStartHandlers:
             await self._show_screen(
                 callback.from_user.id,
                 "atm_intro" if action == "atm" else "branch_intro",
-                keyboards.simple_back_keyboard("nav:home"),
+                keyboards.simple_back_keyboard("maps:open", "К разделу «Рядом»"),
                 source=callback,
             )
-            await self._send_location_request(callback, action)
             return
         if action == "address":
             await state.set_state(AddressStates.query)
@@ -1100,9 +1099,11 @@ class BusinessStartHandlers:
             )
             return
         kind_label = "банкоматы" if kind == "atm" else "отделения"
-        await message.answer(
+        await self._show_panel(
+            message.from_user.id,
             self.content.text("screens.geo_waiting", kind_label=kind_label),
-            reply_markup=keyboards.location_request_keyboard(),
+            keyboards.simple_back_keyboard("maps:open", "К разделу «Рядом»"),
+            source=message,
         )
 
     async def address_handler(self, message: Message, state: FSMContext) -> None:
@@ -1807,10 +1808,22 @@ class BusinessStartHandlers:
         force_new: bool = False,
         media_path: str | None = None,
     ) -> None:
-        panel = None if force_new or not isinstance(source, CallbackQuery) else self.storage.get_panel(telegram_id)
-        if panel:
-            if await self._try_edit_panel(panel["chat_id"], panel["message_id"], text, reply_markup, media_path):
+        if not force_new and isinstance(source, CallbackQuery) and source.message:
+            current_panel = {
+                "chat_id": source.message.chat.id,
+                "message_id": source.message.message_id,
+            }
+            if await self._try_edit_panel(current_panel["chat_id"], current_panel["message_id"], text, reply_markup, media_path):
+                self.storage.save_panel(telegram_id, current_panel["chat_id"], current_panel["message_id"])
                 return
+            panel = self.storage.get_panel(telegram_id)
+            if panel and (
+                panel["chat_id"] != current_panel["chat_id"]
+                or panel["message_id"] != current_panel["message_id"]
+            ):
+                if await self._try_edit_panel(panel["chat_id"], panel["message_id"], text, reply_markup, media_path):
+                    self.storage.save_panel(telegram_id, panel["chat_id"], panel["message_id"])
+                    return
         message = source.message if isinstance(source, CallbackQuery) else source
         if media_path and len(text) <= 1024:
             sent = await message.answer_photo(FSInputFile(media_path), caption=text, reply_markup=reply_markup)
@@ -1863,14 +1876,6 @@ class BusinessStartHandlers:
                 if self._is_not_modified(exc):
                     return True
         return False
-
-    async def _send_location_request(self, source: Message | CallbackQuery, kind: str) -> None:
-        anchor = source.message if isinstance(source, CallbackQuery) else source
-        label = "📍 Отправить геопозицию"
-        await anchor.answer(
-            self.content.text("screens.geo_request_note", kind_label=NEARBY_KIND_LABELS[kind]),
-            reply_markup=keyboards.location_request_keyboard(label),
-        )
 
     def _media_path(self, screen_key: str) -> str | None:
         payload = self.content.get(f"media.{screen_key}")
