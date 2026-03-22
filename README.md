@@ -30,21 +30,22 @@ pip install -r requirements.txt
 python3 run.py
 ```
 
-## Хостинг 24/7 на Render
+## Хостинг на Render Free
 
-Для этого бота самый простой прод-вариант - `Background Worker` на Render с persistent disk, потому что:
+В проект уже добавлен [render.yaml](/Users/timur/Documents/New project/business_start_bot/render.yaml) под бесплатный `Web Service`.
 
-- бот уже работает через polling и не требует webhook;
-- SQLite-файл можно сохранить на диске;
-- сервис будет работать независимо от вашего Mac.
+Как это работает:
 
-В проект уже добавлен [render.yaml](/Users/timur/Documents/New project/business_start_bot/render.yaml).
+- бот запускается в режиме `webhook`, а не `polling`;
+- Render сам даёт публичный URL, бот использует его как webhook base URL;
+- health check идёт по `/healthz`;
+- бесплатный план даёт `750` instance hours на workspace в месяц.
 
 Что нужно сделать:
 
-1. Создать git-репозиторий для проекта и запушить его на GitHub, GitLab или Bitbucket.
-2. В Render создать новый Blueprint или выбрать `New +` -> `Blueprint`.
-3. Подключить репозиторий с этим проектом.
+1. Запушить проект в GitHub, GitLab или Bitbucket.
+2. В Render выбрать `New +` -> `Blueprint`.
+3. Подключить репозиторий с проектом.
 4. В Render заполнить секреты:
    - `TELEGRAM_TOKEN`
    - `BOT_USERNAME`
@@ -53,11 +54,18 @@ python3 run.py
    - `LEAD_WEBHOOK_URL`, `POSTBACK_URL`, `GOOGLE_SHEETS_WEBHOOK_URL`, если нужны внешние отправки
 5. Дождаться первого деплоя.
 
-Важно:
+Ограничения бесплатного Render:
 
-- диск монтируется в `/opt/render/project/src/data`, поэтому SQLite и экспорт сохраняются между рестартами;
-- сервис запускается как worker командой `python3 run.py`;
-- если потом захотите webhook вместо polling, это уже отдельная перенастройка.
+- free web service засыпает через `15 минут` без входящего трафика;
+- после пробуждения первый запрос может ждать около `1 минуты`;
+- локальная файловая система временная, поэтому SQLite-файл и локальные изменения могут потеряться при restart / redeploy / spin down;
+- Render прямо не рекомендует free instance для production.
+
+Практический вывод:
+
+- для теста и запуска без вашего Mac этот вариант подходит;
+- для стабильного прод-режима лучше paid worker + persistent disk или внешний Postgres;
+- если хотите держать free service почти постоянно активным, обычно ставят внешний health ping на `/healthz`.
 
 ## Что уже предзаполнено
 

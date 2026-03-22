@@ -39,6 +39,16 @@ def _get_int(name: str, default: int) -> int:
     return int(value)
 
 
+def _get_webhook_port(default: int = 8080) -> int:
+    explicit = _get("WEBHOOK_PORT")
+    if explicit:
+        return int(explicit)
+    render_port = _get("PORT")
+    if render_port:
+        return int(render_port)
+    return default
+
+
 def _get_admin_ids() -> tuple[int, ...]:
     raw = ",".join(filter(None, [_get("ADMIN_IDS"), _get("ADMIN_ID")]))
     if not raw:
@@ -125,10 +135,10 @@ def load_settings(env_path: str | Path | None = None) -> Settings:
         admin_usernames=_get_admin_usernames(),
         timezone=_get("TIMEZONE", "Europe/Moscow"),
         use_webhook=_get_bool("USE_WEBHOOK", False),
-        webhook_base_url=_get("WEBHOOK_BASE_URL"),
+        webhook_base_url=_get("WEBHOOK_BASE_URL") or _get("RENDER_EXTERNAL_URL"),
         webhook_path=_get("WEBHOOK_PATH", "/telegram/webhook"),
         webhook_host=_get("WEBHOOK_HOST", "0.0.0.0"),
-        webhook_port=_get_int("WEBHOOK_PORT", 8080),
+        webhook_port=_get_webhook_port(8080),
         offer_url=_get("OFFER_URL"),
         agent_offer_path=Path(_get("AGENT_OFFER_PATH", str(ROOT_DIR / "data" / "assets" / "agent-referral-guide.pdf"))),
         lead_webhook_url=_get("LEAD_WEBHOOK_URL"),
