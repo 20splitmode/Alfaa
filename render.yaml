@@ -1,0 +1,41 @@
+services:
+  - type: worker
+    name: alfa-business-navigator-bot
+    runtime: python
+    plan: starter
+    region: oregon
+    rootDir: .
+    autoDeploy: true
+    buildCommand: pip install -r requirements.txt
+    startCommand: python3 run.py
+    disk:
+      name: data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1
+    envVars:
+      - key: TELEGRAM_TOKEN
+        sync: false
+      - key: BOT_NAME
+        value: "Альфа Бизнес Навигатор"
+      - key: BOT_USERNAME
+        sync: false
+      - key: ADMIN_IDS
+        value: "7793096620"
+      - key: ADMIN_USERNAMES
+        value: "LeeCeo_HQ"
+      - key: TIMEZONE
+        value: "Europe/Moscow"
+      - key: USE_WEBHOOK
+        value: "0"
+      - key: OFFER_URL
+        sync: false
+      - key: LEAD_WEBHOOK_URL
+        sync: false
+      - key: POSTBACK_URL
+        sync: false
+      - key: GOOGLE_SHEETS_WEBHOOK_URL
+        sync: false
+      - key: YANDEX_MAPS_API_KEY
+        sync: false
+      - key: YANDEX_MAPS_LANG
+        value: "ru_RU"
