@@ -2,11 +2,18 @@ from __future__ import annotations
 
 from typing import Any
 
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove, WebAppInfo
+
+
+MINI_APP_URL = "https://c6feb57f2a3855.lhr.life/mini"
 
 
 def _inline(rows: list[list[InlineKeyboardButton]]) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def _mini_app_row() -> list[InlineKeyboardButton]:
+    return [InlineKeyboardButton(text="Мини-апп", web_app=WebAppInfo(url=MINI_APP_URL))]
 
 
 def home_keyboard(is_admin: bool = False) -> InlineKeyboardMarkup:
@@ -19,6 +26,7 @@ def home_keyboard(is_admin: bool = False) -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="Каталог продуктов", callback_data="catalog:page:0"),
             InlineKeyboardButton(text="Курс валют", callback_data="currency:open"),
         ],
+        _mini_app_row(),
     ]
     if is_admin:
         rows.append([InlineKeyboardButton(text="Админ-панель", callback_data="admin:panel")])
@@ -189,6 +197,7 @@ def simple_back_keyboard(callback_data: str = "nav:home", label: str = "Глав
 def help_keyboard() -> InlineKeyboardMarkup:
     return _inline(
         [
+            _mini_app_row(),
             [InlineKeyboardButton(text="Как это работает", callback_data="info:work")],
             [InlineKeyboardButton(text="Правовой режим", callback_data="info:legal")],
             [InlineKeyboardButton(text="Чеклист ИП", callback_data="info:ip_checklist")],
