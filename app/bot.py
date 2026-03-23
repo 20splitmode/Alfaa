@@ -7,7 +7,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.types import BotCommand, BotCommandScopeChat, BotCommandScopeDefault
+from aiogram.types import BotCommand, BotCommandScopeChat, BotCommandScopeDefault, MenuButtonWebApp, WebAppInfo
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 
 from .agent_offer_pdf import ensure_agent_offer_pdf
@@ -18,6 +18,9 @@ from .integrations import IntegrationService
 from .product_catalog import ProductCatalog
 from .scheduler import FollowupScheduler
 from .storage import Storage
+
+MINI_APP_URL = "https://c6feb57f2a3855.lhr.life/mini"
+MINI_APP_BUTTON_TEXT = "Открыть радар"
 
 
 class BusinessStartBot:
@@ -55,6 +58,12 @@ class BusinessStartBot:
         admin_commands = default_commands + [BotCommand(command="admin", description="Админ-панель")]
         for admin_id in self.settings.admin_ids:
             await self.bot.set_my_commands(admin_commands, scope=BotCommandScopeChat(chat_id=admin_id))
+        await self.bot.set_chat_menu_button(
+            menu_button=MenuButtonWebApp(
+                text=MINI_APP_BUTTON_TEXT,
+                web_app=WebAppInfo(url=MINI_APP_URL),
+            )
+        )
 
     async def start(self) -> None:
         self.scheduler.start()
