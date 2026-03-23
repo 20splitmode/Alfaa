@@ -5,9 +5,6 @@ from typing import Any
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
 
 
-MINI_APP_URL = "https://c6feb57f2a3855.lhr.life/mini"
-
-
 def _inline(rows: list[list[InlineKeyboardButton]]) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
