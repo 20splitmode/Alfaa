@@ -13,7 +13,13 @@ from .utils import compact_name
 
 
 class FollowupScheduler:
-    def __init__(self, bot: Bot, storage: Storage, content: ContentCatalog, timezone: str):
+    def __init__(
+        self,
+        bot: Bot,
+        storage: Storage,
+        content: ContentCatalog,
+        timezone: str,
+    ):
         self.bot = bot
         self.storage = storage
         self.content = content
@@ -46,7 +52,7 @@ class FollowupScheduler:
 
     async def _send_or_update_panel(self, telegram_id: int, text: str) -> None:
         panel = self.storage.get_panel(telegram_id)
-        markup = keyboards.home_keyboard()
+        markup = keyboards.home_keyboard(False)
         if panel:
             try:
                 await self.bot.edit_message_text(

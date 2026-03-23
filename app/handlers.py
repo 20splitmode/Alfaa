@@ -9,7 +9,7 @@ from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command, CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import CallbackQuery, FSInputFile, InputMediaPhoto, Message
+from aiogram.types import CallbackQuery, FSInputFile, InlineKeyboardMarkup, InputMediaPhoto, Message
 
 from . import keyboards
 from .agent_exam import (
@@ -308,7 +308,7 @@ class BusinessStartHandlers:
         await self._show_screen(
             message.from_user.id,
             "welcome",
-            keyboards.home_keyboard(self._is_admin(message.from_user.id, message.from_user.username)),
+            self._home_keyboard(message.from_user.id, message.from_user.username),
             source=message,
             force_new=True,
         )
@@ -329,13 +329,13 @@ class BusinessStartHandlers:
         if not message.from_user:
             return
         await state.clear()
-        await self._show_panel(message.from_user.id, self.content.text("screens.help"), keyboards.help_keyboard(), source=message)
+        await self._show_panel(message.from_user.id, self.content.text("screens.help"), self._help_keyboard(), source=message)
 
     async def admin_command(self, message: Message, state: FSMContext) -> None:
         if not message.from_user:
             return
         if not self._is_admin(message.from_user.id, message.from_user.username):
-            await self._show_panel(message.from_user.id, self.content.text("errors.admin_only"), keyboards.help_keyboard(), source=message, force_new=True)
+            await self._show_panel(message.from_user.id, self.content.text("errors.admin_only"), self._help_keyboard(), source=message, force_new=True)
             return
         await state.clear()
         await self._show_panel(message.from_user.id, self.content.text("screens.admin_intro"), keyboards.admin_keyboard(), source=message)
@@ -383,11 +383,11 @@ class BusinessStartHandlers:
         product_id = callback.data.split(":")[2]
         product = self.catalog.get_product(product_id)
         if not product:
-            await self._show_panel(callback.from_user.id, self.content.text("screens.api_fallback"), keyboards.help_keyboard(), source=callback)
+            await self._show_panel(callback.from_user.id, self.content.text("screens.api_fallback"), self._help_keyboard(), source=callback)
             return
         self.storage.update_user(callback.from_user.id, scenario=product_id)
         if product_id == "help":
-            await self._show_panel(callback.from_user.id, self.content.text("screens.product_help"), keyboards.help_keyboard(), source=callback)
+            await self._show_panel(callback.from_user.id, self.content.text("screens.product_help"), self._help_keyboard(), source=callback)
             return
         benefits = self._bullets(product.get("benefits") or [])
         documents = self._bullets(product.get("documents") or [])
@@ -433,7 +433,7 @@ class BusinessStartHandlers:
         situation_id = parts[2]
         situation = self.catalog.get_situation(situation_id)
         if not situation:
-            await self._show_panel(callback.from_user.id, self.content.text("screens.api_fallback"), keyboards.help_keyboard(), source=callback)
+            await self._show_panel(callback.from_user.id, self.content.text("screens.api_fallback"), self._help_keyboard(), source=callback)
             return
         self.storage.update_user(callback.from_user.id, segment=situation_id)
         if situation_id == "industry":
@@ -462,7 +462,7 @@ class BusinessStartHandlers:
         industry_id = callback.data.split(":")[2]
         industry = self.catalog.get_industry(industry_id)
         if not industry:
-            await self._show_panel(callback.from_user.id, self.content.text("screens.api_fallback"), keyboards.help_keyboard(), source=callback)
+            await self._show_panel(callback.from_user.id, self.content.text("screens.api_fallback"), self._help_keyboard(), source=callback)
             return
         self.storage.update_user(callback.from_user.id, activity=industry_id)
         await self._show_recommendation(
@@ -488,12 +488,12 @@ class BusinessStartHandlers:
             "timeline",
         }
         if key not in allowed:
-            await self._show_panel(callback.from_user.id, self.content.text("screens.help"), keyboards.help_keyboard(), source=callback)
+            await self._show_panel(callback.from_user.id, self.content.text("screens.help"), self._help_keyboard(), source=callback)
             return
         await self._show_panel(
             callback.from_user.id,
             self.content.text(f"screens.info_{key}"),
-            keyboards.help_keyboard(),
+            self._help_keyboard(),
             source=callback,
         )
 
@@ -749,7 +749,7 @@ class BusinessStartHandlers:
                 await self._show_panel(
                     callback.from_user.id,
                     self.content.text("screens.agent_rules_declined"),
-                    keyboards.help_keyboard(),
+                    self._help_keyboard(),
                     source=callback,
                 )
                 return
@@ -1355,7 +1355,7 @@ class BusinessStartHandlers:
         await self._show_panel(
             message.from_user.id,
             self.content.text("errors.fallback"),
-            keyboards.home_keyboard(self._is_admin(message.from_user.id, message.from_user.username)),
+            self._home_keyboard(message.from_user.id, message.from_user.username),
             source=message,
         )
 
@@ -1363,9 +1363,15 @@ class BusinessStartHandlers:
         await self._show_screen(
             telegram_id,
             "home",
-            keyboards.home_keyboard(self._is_admin(telegram_id, username)),
+            self._home_keyboard(telegram_id, username),
             source=source,
         )
+
+    def _home_keyboard(self, telegram_id: int, username: str | None) -> InlineKeyboardMarkup:
+        return keyboards.home_keyboard(self._is_admin(telegram_id, username))
+
+    def _help_keyboard(self) -> InlineKeyboardMarkup:
+        return keyboards.help_keyboard()
 
     async def _show_recommendation(
         self,

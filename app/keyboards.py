@@ -187,18 +187,17 @@ def simple_back_keyboard(callback_data: str = "nav:home", label: str = "Глав
 
 
 def help_keyboard() -> InlineKeyboardMarkup:
-    return _inline(
-        [
-            [InlineKeyboardButton(text="Как это работает", callback_data="info:work")],
-            [InlineKeyboardButton(text="Правовой режим", callback_data="info:legal")],
-            [InlineKeyboardButton(text="Чеклист ИП", callback_data="info:ip_checklist")],
-            [InlineKeyboardButton(text="Самозанятый или ИП", callback_data="info:compare")],
-            [InlineKeyboardButton(text="Сроки и ошибки", callback_data="info:timeline")],
-            [InlineKeyboardButton(text="Агентский доступ", callback_data="agent:panel")],
-            [InlineKeyboardButton(text="Каталог", callback_data="catalog:page:0")],
-            [InlineKeyboardButton(text="Главный экран", callback_data="nav:home")],
-        ]
-    )
+    rows = [
+        [InlineKeyboardButton(text="Как это работает", callback_data="info:work")],
+        [InlineKeyboardButton(text="Правовой режим", callback_data="info:legal")],
+        [InlineKeyboardButton(text="Чеклист ИП", callback_data="info:ip_checklist")],
+        [InlineKeyboardButton(text="Самозанятый или ИП", callback_data="info:compare")],
+        [InlineKeyboardButton(text="Сроки и ошибки", callback_data="info:timeline")],
+        [InlineKeyboardButton(text="Агентский доступ", callback_data="agent:panel")],
+        [InlineKeyboardButton(text="Каталог", callback_data="catalog:page:0")],
+    ]
+    rows.append([InlineKeyboardButton(text="Главный экран", callback_data="nav:home")])
+    return _inline(rows)
 
 
 def consent_keyboard(product_id: str) -> InlineKeyboardMarkup:
