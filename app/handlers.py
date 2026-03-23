@@ -241,6 +241,7 @@ class BusinessStartHandlers:
         self.content = content
         self.integrations = integrations
         self.catalog = catalog
+        self.process_started_at = now_utc()
         self.router = Router()
         self._register()
 
@@ -1789,9 +1790,12 @@ class BusinessStartHandlers:
         force_new: bool = False,
         **kwargs: Any,
     ) -> None:
+        text = self.content.text(f"screens.{screen_key}", **kwargs)
+        if screen_key in {"welcome", "home"} and self._should_show_wake_notice():
+            text = f"{self.content.text('screens.wake_notice')}\n\n{text}"
         await self._show_panel(
             telegram_id,
-            self.content.text(f"screens.{screen_key}", **kwargs),
+            text,
             reply_markup,
             source=source,
             force_new=force_new,
@@ -1896,6 +1900,9 @@ class BusinessStartHandlers:
 
     def _is_not_modified(self, exc: TelegramBadRequest) -> bool:
         return "message is not modified" in str(exc).lower()
+
+    def _should_show_wake_notice(self) -> bool:
+        return (now_utc() - self.process_started_at) <= timedelta(seconds=120)
 
     def _format_distance(self, distance_m: int) -> str:
         if distance_m >= 1000:

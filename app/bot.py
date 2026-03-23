@@ -7,7 +7,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.types import BotCommand
+from aiogram.types import BotCommand, BotCommandScopeChat, BotCommandScopeDefault
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 
 from .agent_offer_pdf import ensure_agent_offer_pdf
@@ -45,15 +45,16 @@ class BusinessStartBot:
         self.scheduler = FollowupScheduler(self.bot, self.storage, self.content, settings.timezone)
 
     async def _set_commands(self) -> None:
-        await self.bot.set_my_commands(
-            [
-                BotCommand(command="start", description="Открыть бот"),
-                BotCommand(command="menu", description="Главный экран"),
-                BotCommand(command="admin", description="Админ-панель"),
-                BotCommand(command="help", description="О боте"),
-                BotCommand(command="agent", description="Агентский доступ"),
-            ]
-        )
+        default_commands = [
+            BotCommand(command="start", description="Открыть бот"),
+            BotCommand(command="menu", description="Главный экран"),
+            BotCommand(command="help", description="О боте"),
+            BotCommand(command="agent", description="Агентский доступ"),
+        ]
+        await self.bot.set_my_commands(default_commands, scope=BotCommandScopeDefault())
+        admin_commands = default_commands + [BotCommand(command="admin", description="Админ-панель")]
+        for admin_id in self.settings.admin_ids:
+            await self.bot.set_my_commands(admin_commands, scope=BotCommandScopeChat(chat_id=admin_id))
 
     async def start(self) -> None:
         self.scheduler.start()
@@ -62,6 +63,7 @@ class BusinessStartBot:
             if self.settings.use_webhook:
                 await self._start_webhook()
             else:
+                await self.bot.delete_webhook(drop_pending_updates=False)
                 await self.dispatcher.start_polling(
                     self.bot,
                     allowed_updates=self.dispatcher.resolve_used_update_types(),
