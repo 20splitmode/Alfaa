@@ -65,6 +65,7 @@ class Storage:
             last_daily_ping_at TEXT,
             panel_chat_id INTEGER,
             panel_message_id INTEGER,
+            panel_media_path TEXT,
             quiz_completed_at TEXT,
             last_result_at TEXT,
             last_seen_at TEXT,
@@ -213,6 +214,7 @@ class Storage:
             self._ensure_column("users", "last_daily_ping_at", "TEXT")
             self._ensure_column("users", "panel_chat_id", "INTEGER")
             self._ensure_column("users", "panel_message_id", "INTEGER")
+            self._ensure_column("users", "panel_media_path", "TEXT")
             self._ensure_column("users", "referred_by_agent_id", "INTEGER")
             self._ensure_column("leads", "agent_id", "INTEGER")
             self._ensure_column("leads", "fraud_score", "INTEGER NOT NULL DEFAULT 0")
@@ -767,6 +769,7 @@ class Storage:
             "last_daily_ping_at",
             "panel_chat_id",
             "panel_message_id",
+            "panel_media_path",
             "quiz_completed_at",
             "last_result_at",
             "last_seen_at",
@@ -781,8 +784,13 @@ class Storage:
         self._execute(f"UPDATE users SET {assignments} WHERE telegram_id = ?", params)
         return self.get_user(telegram_id)
 
-    def save_panel(self, telegram_id: int, chat_id: int, message_id: int) -> dict[str, Any] | None:
-        return self.update_user(telegram_id, panel_chat_id=chat_id, panel_message_id=message_id)
+    def save_panel(self, telegram_id: int, chat_id: int, message_id: int, media_path: str | None = None) -> dict[str, Any] | None:
+        return self.update_user(
+            telegram_id,
+            panel_chat_id=chat_id,
+            panel_message_id=message_id,
+            panel_media_path=media_path or "",
+        )
 
     def get_panel(self, telegram_id: int) -> dict[str, Any] | None:
         user = self.get_user(telegram_id)
@@ -791,6 +799,7 @@ class Storage:
         return {
             "chat_id": int(user["panel_chat_id"]),
             "message_id": int(user["panel_message_id"]),
+            "media_path": user.get("panel_media_path") or None,
         }
 
     def save_quiz_answer(self, telegram_id: int, question_key: str, answer_key: str, answer_text: str) -> None:

@@ -12,12 +12,12 @@ def _inline(rows: list[list[InlineKeyboardButton]]) -> InlineKeyboardMarkup:
 def home_keyboard(is_admin: bool = False) -> InlineKeyboardMarkup:
     rows = [
         [
-            InlineKeyboardButton(text="Рядом", callback_data="maps:open"),
-            InlineKeyboardButton(text="Подобрать формат", callback_data="diagnostic:start"),
+            InlineKeyboardButton(text="Подобрать", callback_data="diagnostic:start"),
+            InlineKeyboardButton(text="Каталог", callback_data="catalog:page:0"),
         ],
         [
-            InlineKeyboardButton(text="Каталог продуктов", callback_data="catalog:page:0"),
-            InlineKeyboardButton(text="Курс валют", callback_data="currency:open"),
+            InlineKeyboardButton(text="Рядом", callback_data="maps:open"),
+            InlineKeyboardButton(text="Курс", callback_data="currency:open"),
         ],
     ]
     if is_admin:

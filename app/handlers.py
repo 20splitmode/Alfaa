@@ -241,7 +241,6 @@ class BusinessStartHandlers:
         self.content = content
         self.integrations = integrations
         self.catalog = catalog
-        self.process_started_at = now_utc()
         self.router = Router()
         self._register()
 
@@ -537,7 +536,6 @@ class BusinessStartHandlers:
             return
         await callback.answer()
         await state.clear()
-        await self._show_screen(callback.from_user.id, "currency_loading", keyboards.currency_keyboard(), source=callback)
         try:
             rates = await self.integrations.get_currency_rates()
         except Exception as exc:
@@ -1797,8 +1795,6 @@ class BusinessStartHandlers:
         **kwargs: Any,
     ) -> None:
         text = self.content.text(f"screens.{screen_key}", **kwargs)
-        if screen_key in {"welcome", "home"} and self._should_show_wake_notice():
-            text = f"{self.content.text('screens.wake_notice')}\n\n{text}"
         await self._show_panel(
             telegram_id,
             text,
@@ -1818,28 +1814,43 @@ class BusinessStartHandlers:
         force_new: bool = False,
         media_path: str | None = None,
     ) -> None:
+        panel = self.storage.get_panel(telegram_id)
         if not force_new and isinstance(source, CallbackQuery) and source.message:
             current_panel = {
                 "chat_id": source.message.chat.id,
                 "message_id": source.message.message_id,
+                "media_path": panel.get("media_path") if panel and panel["chat_id"] == source.message.chat.id and panel["message_id"] == source.message.message_id else None,
             }
-            if await self._try_edit_panel(current_panel["chat_id"], current_panel["message_id"], text, reply_markup, media_path):
-                self.storage.save_panel(telegram_id, current_panel["chat_id"], current_panel["message_id"])
+            if await self._try_edit_panel(
+                current_panel["chat_id"],
+                current_panel["message_id"],
+                text,
+                reply_markup,
+                media_path,
+                current_media_path=current_panel["media_path"],
+            ):
+                self.storage.save_panel(telegram_id, current_panel["chat_id"], current_panel["message_id"], media_path)
                 return
-            panel = self.storage.get_panel(telegram_id)
             if panel and (
                 panel["chat_id"] != current_panel["chat_id"]
                 or panel["message_id"] != current_panel["message_id"]
             ):
-                if await self._try_edit_panel(panel["chat_id"], panel["message_id"], text, reply_markup, media_path):
-                    self.storage.save_panel(telegram_id, panel["chat_id"], panel["message_id"])
+                if await self._try_edit_panel(
+                    panel["chat_id"],
+                    panel["message_id"],
+                    text,
+                    reply_markup,
+                    media_path,
+                    current_media_path=panel.get("media_path"),
+                ):
+                    self.storage.save_panel(telegram_id, panel["chat_id"], panel["message_id"], media_path)
                     return
         message = source.message if isinstance(source, CallbackQuery) else source
         if media_path and len(text) <= 1024:
             sent = await message.answer_photo(FSInputFile(media_path), caption=text, reply_markup=reply_markup)
         else:
             sent = await message.answer(text, reply_markup=reply_markup)
-        self.storage.save_panel(telegram_id, sent.chat.id, sent.message_id)
+        self.storage.save_panel(telegram_id, sent.chat.id, sent.message_id, media_path)
 
     async def _try_edit_panel(
         self,
@@ -1848,7 +1859,22 @@ class BusinessStartHandlers:
         text: str,
         reply_markup: Any,
         media_path: str | None,
+        *,
+        current_media_path: str | None = None,
     ) -> bool:
+        if media_path and len(text) <= 1024 and current_media_path == media_path:
+            try:
+                await self.bot.edit_message_caption(
+                    chat_id=chat_id,
+                    message_id=message_id,
+                    caption=text,
+                    parse_mode="HTML",
+                    reply_markup=reply_markup,
+                )
+                return True
+            except TelegramBadRequest as exc:
+                if self._is_not_modified(exc):
+                    return True
         if media_path and len(text) <= 1024:
             try:
                 await self.bot.edit_message_media(
@@ -1906,9 +1932,6 @@ class BusinessStartHandlers:
 
     def _is_not_modified(self, exc: TelegramBadRequest) -> bool:
         return "message is not modified" in str(exc).lower()
-
-    def _should_show_wake_notice(self) -> bool:
-        return (now_utc() - self.process_started_at) <= timedelta(seconds=120)
 
     def _format_distance(self, distance_m: int) -> str:
         if distance_m >= 1000:
